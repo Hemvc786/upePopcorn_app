@@ -1,5 +1,28 @@
 import { useState } from "react";
 
+/*
+CONCEPT::::::
+
+component composition uses: 
+1. building better layout
+2. Avoiding Prop drilling
+3. To make components reusable
+
+
+COMPONENT COMPOSITION:::::::
+Instead of passing the prop from the parent to the deeply nested child component i.e prop drilling. we do is component composition i.e writing the parent-children structure in App component itself which is parent, when we do so we will use children prop to call the component in actual parent and as the required state we have already lifted the state up in App comp itself we pass it only to the required deeply nested child component thats how avoid multiple props drilling to the intermediate parents. 
+
+Example:-
+here we require the movies state i.e in App component to MovieList.
+App->Main->ListBox->MovieList
+
+here we require the movies state i.e in App component to NumResults.
+App->NavBar->NumResults
+
+
+using CHILDREN CONCEPT for component composition is preffered than using its alternative.
+*/
+
 const tempMovieData = [
   {
     imdbID: "tt1375666",
@@ -50,131 +73,236 @@ const tempWatchedData = [
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
+//structural component
 export default function App() {
+  const [movies, setMovies] = useState(tempMovieData);
+  const [watched, setWatched] = useState(tempWatchedData);
+
   return (
     <>
-      <NavBar />
-      <Main />
+      <NavBar>
+        <Search />
+        <NumResults movies={movies} />
+      </NavBar>
+
+      <Main>
+        {/*previously this below box was ListBox */}
+        <Box>
+          <MovieList movies={movies} />
+        </Box>
+
+        {/*previously this below box was WatchedBox */}
+        <Box>
+          <>
+            <WatchedSummary watched={watched} />
+
+            <WatchedMovieList watched={watched} />
+          </>
+        </Box>
+
+        {/* --------below using element, alternative to ----------- */}
+
+        {/* <Box element={<MovieList movies={movies} />} />
+        <Box
+          element={
+            <>
+              <WatchedSummary watched={watched} />
+              <WatchedMovieList watched={watched} />
+            </>
+          }
+        /> */}
+      </Main>
     </>
   );
 }
-
-function NavBar() {
-  const [query, setQuery] = useState("");
-
+//structural component
+function NavBar({ children }) {
   return (
     <nav className="nav-bar">
-      <div className="logo">
-        <span role="img">🍿</span>
-        <h1>usePopcorn</h1>
-      </div>
-      <input
-        className="search"
-        type="text"
-        placeholder="Search movies..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
-      <p className="num-results">
-        Found <strong>X</strong> results
-      </p>
+      <Logo />
+      {children}
     </nav>
   );
 }
+//Presentational Component
+function Logo() {
+  return (
+    <div className="logo">
+      <span role="img">🍿</span>
+      <h1>usePopcorn</h1>
+    </div>
+  );
+}
 
-function Main() {
-  const [movies, setMovies] = useState(tempMovieData);
-  const [watched, setWatched] = useState(tempWatchedData);
-  const [isOpen1, setIsOpen1] = useState(true);
-  const [isOpen2, setIsOpen2] = useState(true);
+//Stateful component
+function Search() {
+  const [query, setQuery] = useState("");
 
+  return (
+    <input
+      className="search"
+      type="text"
+      placeholder="Search movies..."
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+    />
+  );
+}
+
+//Presentational Component
+function NumResults({ movies }) {
+  return (
+    <p className="num-results">
+      Found <strong>{movies.length}</strong> results
+    </p>
+  );
+}
+
+//structural component
+function Main({ children }) {
+  return <main className="main">{children}</main>;
+}
+
+//stateful component-->using children=representing COMPONENT COMPOSITION
+function Box({ children }) {
+  const [isOpen, setIsOpen] = useState(true);
+
+  return (
+    <div className="box">
+      <button className="btn-toggle" onClick={() => setIsOpen((open) => !open)}>
+        {isOpen ? "–" : "+"}
+      </button>
+      {isOpen && children}
+    </div>
+  );
+}
+//using Alternative to children ---> 'element' can be anything
+// function Box({ element }) {
+//   const [isOpen, setIsOpen] = useState(true);
+
+//   return (
+//     <div className="box">
+//       <button className="btn-toggle" onClick={() => setIsOpen((open) => !open)}>
+//         {isOpen ? "–" : "+"}
+//       </button>
+//       {isOpen && element}
+//     </div>
+//   );
+// }
+
+// //stateful component
+// function WatchedBox() {
+//
+//   const [isOpen2, setIsOpen2] = useState(true);
+
+//   return (
+//     <div className="box">
+//       <button
+//         className="btn-toggle"
+//         onClick={() => setIsOpen2((open) => !open)}
+//       >
+//         {isOpen2 ? "–" : "+"}
+//       </button>
+//       {isOpen2 && (
+//         <>
+//           <WatchedSummary watched={watched} />
+
+//           <WatchedMovieList watched={watched} />
+//         </>
+//       )}
+//     </div>
+//   );
+// }
+
+//stateful component
+function MovieList({ movies }) {
+  return (
+    <ul className="list">
+      {movies?.map((movie) => (
+        <Movie movie={movie} key={movie.imdbID} />
+      ))}
+    </ul>
+  );
+}
+
+//stateless/presentational component
+function Movie({ movie }) {
+  return (
+    <li key={movie.imdbID}>
+      <img src={movie.Poster} alt={`${movie.Title} poster`} />
+      <h3>{movie.Title}</h3>
+      <div>
+        <p>
+          <span>🗓</span>
+          <span>{movie.Year}</span>
+        </p>
+      </div>
+    </li>
+  );
+}
+
+//stateless/presentational component
+function WatchedSummary({ watched }) {
   const avgImdbRating = average(watched.map((movie) => movie.imdbRating));
   const avgUserRating = average(watched.map((movie) => movie.userRating));
   const avgRuntime = average(watched.map((movie) => movie.runtime));
 
   return (
-    <main className="main">
-      <div className="box">
-        <button
-          className="btn-toggle"
-          onClick={() => setIsOpen1((open) => !open)}
-        >
-          {isOpen1 ? "–" : "+"}
-        </button>
-        {isOpen1 && (
-          <ul className="list">
-            {movies?.map((movie) => (
-              <li key={movie.imdbID}>
-                <img src={movie.Poster} alt={`${movie.Title} poster`} />
-                <h3>{movie.Title}</h3>
-                <div>
-                  <p>
-                    <span>🗓</span>
-                    <span>{movie.Year}</span>
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+    <div className="summary">
+      <h2>Movies you watched</h2>
+      <div>
+        <p>
+          <span>#️⃣</span>
+          <span>{watched.length} movies</span>
+        </p>
+        <p>
+          <span>⭐️</span>
+          <span>{avgImdbRating}</span>
+        </p>
+        <p>
+          <span>🌟</span>
+          <span>{avgUserRating}</span>
+        </p>
+        <p>
+          <span>⏳</span>
+          <span>{avgRuntime} min</span>
+        </p>
       </div>
+    </div>
+  );
+}
 
-      <div className="box">
-        <button
-          className="btn-toggle"
-          onClick={() => setIsOpen2((open) => !open)}
-        >
-          {isOpen2 ? "–" : "+"}
-        </button>
-        {isOpen2 && (
-          <>
-            <div className="summary">
-              <h2>Movies you watched</h2>
-              <div>
-                <p>
-                  <span>#️⃣</span>
-                  <span>{watched.length} movies</span>
-                </p>
-                <p>
-                  <span>⭐️</span>
-                  <span>{avgImdbRating}</span>
-                </p>
-                <p>
-                  <span>🌟</span>
-                  <span>{avgUserRating}</span>
-                </p>
-                <p>
-                  <span>⏳</span>
-                  <span>{avgRuntime} min</span>
-                </p>
-              </div>
-            </div>
+//stateless/presentational component
+function WatchedMovieList({ watched }) {
+  return (
+    <ul className="list">
+      {watched.map((movie) => (
+        <WatchedMovie movie={movie} key={movie.imdbID} />
+      ))}
+    </ul>
+  );
+}
 
-            <ul className="list">
-              {watched.map((movie) => (
-                <li key={movie.imdbID}>
-                  <img src={movie.Poster} alt={`${movie.Title} poster`} />
-                  <h3>{movie.Title}</h3>
-                  <div>
-                    <p>
-                      <span>⭐️</span>
-                      <span>{movie.imdbRating}</span>
-                    </p>
-                    <p>
-                      <span>🌟</span>
-                      <span>{movie.userRating}</span>
-                    </p>
-                    <p>
-                      <span>⏳</span>
-                      <span>{movie.runtime} min</span>
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
+//stateless/presentational component
+function WatchedMovie({ movie }) {
+  return (
+    <li key={movie.imdbID}>
+      <img src={movie.Poster} alt={`${movie.Title} poster`} />
+      <h3>{movie.Title}</h3>
+      <div>
+        <p>
+          <span>⭐️</span>
+          <span>{movie.imdbRating}</span>
+        </p>
+        <p>
+          <span>🌟</span>
+          <span>{movie.userRating}</span>
+        </p>
+        <p>
+          <span>⏳</span>
+          <span>{movie.runtime} min</span>
+        </p>
       </div>
-    </main>
+    </li>
   );
 }
