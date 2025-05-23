@@ -22,6 +22,7 @@ createRoot(document.getElementById("root")).render(
     <StarRating maxRating={7} color="red" size={32} />
 
     <StarRating maxRating={5} color="green" size={12} />
+    <StarRating maxRating={4} color="orangered" size={12} />
 
     <StarRating
       maxRating={3}
