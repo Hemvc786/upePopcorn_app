@@ -1,7 +1,28 @@
 import { useState } from "react";
-//RULE : NEVER UPDATE STATE IN RENDER LOGIC.
 
-//fetch movie data at initial render.
+/*
+CONCEPT::::::
+
+component composition uses: 
+1. building better layout
+2. Avoiding Prop drilling
+3. To make components reusable
+
+
+COMPONENT COMPOSITION:::::::
+Instead of passing the prop from the parent to the deeply nested child component i.e prop drilling. we do is component composition i.e writing the parent-children structure in App component itself which is parent, when we do so we will use children prop to call the component in actual parent and as the required state we have already lifted the state up in App comp itself we pass it only to the required deeply nested child component thats how avoid multiple props drilling to the intermediate parents. 
+
+Example:-
+here we require the movies state i.e in App component to MovieList.
+App->Main->ListBox->MovieList
+
+here we require the movies state i.e in App component to NumResults.
+App->NavBar->NumResults
+
+
+using CHILDREN CONCEPT for component composition is preffered than using its alternative.
+*/
+
 const tempMovieData = [
   {
     imdbID: "tt1375666",
@@ -52,25 +73,10 @@ const tempWatchedData = [
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
-//variable declared outside comp function, Since this variable does not depend on anything inside the component.
-const KEY = `bbfd0853`;
-
 //structural component
 export default function App() {
-  const [movies, setMovies] = useState([]);
-  const [watched, setWatched] = useState([]);
-
-  //setting a state in render logic-----> will immediately cause component to re-rendered itself again.On re-render---->func is executed again-->fetch again--->setMovies again as well ---> also this whole thing happens over and over again----->Therefore Infinite loop of state setting and component re-rendering-->This is the reason why it is allowed to NOT set STATE in render LOGIC.
-  //-------------------------------------------------------------------
-  // fetch(`http://www.omdbapi.com/?apikey=${KEY}&s=interstellar`)
-  //   .then((res) => res.json())
-  //   .then((data) => setMovies(data.Search));
-
-  fetch(`http://www.omdbapi.com/?apikey=${KEY}&s=interstellar`)
-    .then((res) => res.json())
-    .then((data) => console.log(data));
-
-  setWatched([]);
+  const [movies, setMovies] = useState(tempMovieData);
+  const [watched, setWatched] = useState(tempWatchedData);
 
   return (
     <>
@@ -80,10 +86,12 @@ export default function App() {
       </NavBar>
 
       <Main>
+        {/*previously this below box was ListBox */}
         <Box>
           <MovieList movies={movies} />
         </Box>
 
+        {/*previously this below box was WatchedBox */}
         <Box>
           <>
             <WatchedSummary watched={watched} />
@@ -91,6 +99,18 @@ export default function App() {
             <WatchedMovieList watched={watched} />
           </>
         </Box>
+
+        {/* --------below using element, alternative to ----------- */}
+
+        {/* <Box element={<MovieList movies={movies} />} />
+        <Box
+          element={
+            <>
+              <WatchedSummary watched={watched} />
+              <WatchedMovieList watched={watched} />
+            </>
+          }
+        /> */}
       </Main>
     </>
   );
@@ -156,6 +176,43 @@ function Box({ children }) {
     </div>
   );
 }
+//using Alternative to children ---> 'element' can be anything
+// function Box({ element }) {
+//   const [isOpen, setIsOpen] = useState(true);
+
+//   return (
+//     <div className="box">
+//       <button className="btn-toggle" onClick={() => setIsOpen((open) => !open)}>
+//         {isOpen ? "–" : "+"}
+//       </button>
+//       {isOpen && element}
+//     </div>
+//   );
+// }
+
+// //stateful component
+// function WatchedBox() {
+//
+//   const [isOpen2, setIsOpen2] = useState(true);
+
+//   return (
+//     <div className="box">
+//       <button
+//         className="btn-toggle"
+//         onClick={() => setIsOpen2((open) => !open)}
+//       >
+//         {isOpen2 ? "–" : "+"}
+//       </button>
+//       {isOpen2 && (
+//         <>
+//           <WatchedSummary watched={watched} />
+
+//           <WatchedMovieList watched={watched} />
+//         </>
+//       )}
+//     </div>
+//   );
+// }
 
 //stateful component
 function MovieList({ movies }) {
