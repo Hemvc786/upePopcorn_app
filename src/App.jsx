@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 //RULE : NEVER UPDATE STATE IN RENDER LOGIC.
 
 //fetch movie data at initial render.
@@ -57,44 +57,176 @@ const KEY = `bbfd0853`;
 
 //structural component
 export default function App() {
+  const [query, setQuery] = useState("inception");
   const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [selectedId, setSelectedId] = useState("tt1375666");
 
+  /*
+  ///VIDEO: SYNCH MOVIES WITH QUERY DATA some trials:
+  useEffect(function () {
+    console.log("After Initial Render");
+  }, []); //second due to order
+
+  useEffect(function () {
+    console.log("After every render");
+  }); //third due to order
+
+  useEffect(
+    function () {
+      console.log("D");
+    },
+    [query]
+  );
+
+  console.log("during the render"); //run during the render--executes First
+*/
+
+  //VIDEO: HOW TO NOT FETCH DATA
+  //This data fetching introduces side effect in components render logic,i.e not allowed.
   //setting a state in render logic-----> will immediately cause component to re-rendered itself again.On re-render---->func is executed again-->fetch again--->setMovies again as well ---> also this whole thing happens over and over again----->Therefore Infinite loop of state setting and component re-rendering-->This is the reason why it is allowed to NOT set STATE in render LOGIC.
   //-------------------------------------------------------------------
   // fetch(`http://www.omdbapi.com/?apikey=${KEY}&s=interstellar`)
   //   .then((res) => res.json())
   //   .then((data) => setMovies(data.Search));
+  //-------------------------------------------------------------------
 
-  fetch(`http://www.omdbapi.com/?apikey=${KEY}&s=interstellar`)
-    .then((res) => res.json())
-    .then((data) => console.log(data));
+  // fetch(`http://www.omdbapi.com/?apikey=${KEY}&s=interstellar`)
+  //   .then((res) => res.json())
+  //   .then((data) => console.log(data));//OK since here we are only logging to console
 
-  setWatched([]);
+  // setWatched([]); //WILL CAUSE ERROR -> too many re-renders
+  //we want to set movies here but w/o all the above problems
+  //-----------------------------------------------------------------------------------------------------------
+
+  // useEffect --> is used to register an effect.That effect is the function that contains the side effect that we want to register and register means code runs NOTTT when comoponent renders BUT code runs after when then component is painterd to the screen.
+
+  /*
+  WARNING::::::
+
+  Effect callbacks are synchronous to prevent race conditions. Put the async function inside:
+
+useEffect(() => {
+  async function fetchData() {
+    // You can await here
+    const response = await MyAPI.getData(someId);
+    // ...
+  }
+  fetchData();
+}, [someId]); // Or [] if effect doesn't need props or state
+
+//like below will give ERROR
+ useEffect(async function () {
+    fetch(`http://www.omdbapi.com/?apikey=${KEY}&s=interstellar`)
+      .then((res) => res.json())
+      .then((data) => setMovies(data.Search));
+  }, []);
+  */
+
+  function handleSelectMovie(id) {
+    setSelectedId(id);
+  }
+
+  function handleCloseMovie() {
+    setSelectedId(null);
+  }
+
+  //VIDEO: SYNCH MOVIES WITH QUERY DATA::::::
+  //now the useEffect hook is like a event handler which changes when the query state variable changes.
+  useEffect(
+    function () {
+      async function fetchMovies() {
+        try {
+          setIsLoading(true);
+          setError(""); //resetting error
+          const res = await fetch(
+            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`
+          ); //effect is not yet synchronized with 'query' state variable,but effect not know that it should run each time query state changes so include query in depenedancy array .
+          //fetch was successful but check if response is OK using below statement.
+          if (!res.ok)
+            throw new Error("Something went wrong with fetching movies");
+
+          const data = await res.json();
+
+          if (data.Response === "False") {
+            throw new Error("Movie Not Found!");
+          }
+          setMovies(data.Search);
+          setIsLoading(false);
+
+          //console.log(movies); //will give an empty array, SINCE setting state is asynchronous after we instruct REACT to set state in above line of code that doesnt mean that it happens immediately, so here we have stale state therefore empty array.
+
+          console.log(data.Search);
+          console.log(data);
+        } catch (err) {
+          //  // if any .then above fails, this runs
+          console.error(err.message);
+          setError(err.message);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+      if (query.length < 3) {
+        setMovies([]); //removing all movies from UI
+        setError(""); //reset error to nothing
+        return; //fetchMovies() will not even be called!!!!!
+      }
+      fetchMovies();
+    },
+    [query]
+  );
 
   return (
     <>
       <NavBar>
-        <Search />
+        <Search query={query} setQuery={setQuery} />
         <NumResults movies={movies} />
       </NavBar>
 
       <Main>
         <Box>
-          <MovieList movies={movies} />
+          {/* {isLoading ? <Loader /> : <MovieList movies={movies} />} */}
+          {isLoading && <Loader></Loader>}
+          {!isLoading && !error && (
+            <MovieList movies={movies} onSelectMovie={handleSelectMovie} />
+          )}
+          {error && <ErrorMessage message={error}></ErrorMessage>}
         </Box>
 
         <Box>
           <>
-            <WatchedSummary watched={watched} />
-
-            <WatchedMovieList watched={watched} />
+            {selectedId ? (
+              <MovieDetails
+                selectedId={selectedId}
+                onCloseMovie={handleCloseMovie}
+              />
+            ) : (
+              <>
+                <WatchedSummary watched={watched} />
+                <WatchedMovieList watched={watched} />
+              </>
+            )}
           </>
         </Box>
       </Main>
     </>
   );
 }
+
+function Loader() {
+  return <p className="loader">Loading...</p>;
+}
+function ErrorMessage({ message }) {
+  return (
+    <p className="error">
+      <span>⛔</span>
+      {message}
+    </p>
+  );
+}
+
 //structural component
 function NavBar({ children }) {
   return (
@@ -115,9 +247,7 @@ function Logo() {
 }
 
 //Stateful component
-function Search() {
-  const [query, setQuery] = useState("");
-
+function Search({ query, setQuery }) {
   return (
     <input
       className="search"
@@ -158,20 +288,20 @@ function Box({ children }) {
 }
 
 //stateful component
-function MovieList({ movies }) {
+function MovieList({ movies, onSelectMovie }) {
   return (
-    <ul className="list">
+    <ul className="list list-movies">
       {movies?.map((movie) => (
-        <Movie movie={movie} key={movie.imdbID} />
+        <Movie movie={movie} key={movie.imdbID} onSelectMovie={onSelectMovie} />
       ))}
     </ul>
   );
 }
 
 //stateless/presentational component
-function Movie({ movie }) {
+function Movie({ movie, onSelectMovie }) {
   return (
-    <li key={movie.imdbID}>
+    <li onClick={() => onSelectMovie(movie.imdbID)}>
       <img src={movie.Poster} alt={`${movie.Title} poster`} />
       <h3>{movie.Title}</h3>
       <div>
@@ -181,6 +311,17 @@ function Movie({ movie }) {
         </p>
       </div>
     </li>
+  );
+}
+
+function MovieDetails({ selectedId, onCloseMovie }) {
+  return (
+    <div className="details">
+      <button className="btn-back" onClick={onCloseMovie}>
+        &larr;
+      </button>
+      {selectedId}
+    </div>
   );
 }
 
