@@ -1,6 +1,10 @@
 import { useState } from "react";
 import PropTypes from "prop-types"; //PropTypes is a Object from "prop-types" package and below in code we have written----------->StarRating.propTypes where propTypes is a property
 
+//on Event occurence-->component should re-render and UI should update-->SO WE NEED STATE.
+/*
+whenever we hover over stars we get like the temporary rating exactly the no. of starsthat are currently being hovered, but it is completely independent from the rating that is actually set right now...something should happen in UI , i.e the component should re-render whenever there is hover event---so we need the new state in application.
+*/
 const containerStyle = {
   display: "flex",
   alignItems: "center",
@@ -25,6 +29,7 @@ export default function StarRating({
   defaultRating = 0,
   onSetRating,
 }) {
+  //As we need UI to re-render Based on a EVENT so we need state.
   const [rating, setRating] = useState(defaultRating);
   const [tempRating, setTempRating] = useState(0);
 
@@ -60,6 +65,7 @@ export default function StarRating({
           ></Star>
         ))}
       </div>
+      {/* rating || "" */}
       {/*  tempRating || rating || "" */}
       <p style={textStyle}>
         {messages.length === maxRating
@@ -69,7 +75,7 @@ export default function StarRating({
     </div>
   );
 }
-
+//---------------------------------------------------------------------------------------------------
 function Star({ onRate, full, onHoverIn, onHoverOut, color, size }) {
   const starStyle = {
     width: `${size}px`,

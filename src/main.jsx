@@ -17,8 +17,6 @@ import App from "./App.jsx";
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <App />
-
-    {/*  */}
     {/* <StarRating maxRating={10} />
 
     <StarRating maxRating={7} color="red" size={32} />
@@ -36,7 +34,5 @@ createRoot(document.getElementById("root")).render(
 
     <StarRating maxRating={1} color="black" className="test" />
     <Test /> */}
-
-    {/*  */}
   </StrictMode>
 );
