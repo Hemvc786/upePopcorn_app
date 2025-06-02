@@ -43,13 +43,13 @@ export default function App() {
 
   useEffect(function () {
     console.log("After Initial Render");
-  }, []); //executes "second" due to order
+  }, []); //executes ----------------"second" due to order
 
 
   //Below effect has no Depenedancy array so it is SYNCHRONIZED with everything SO runs after EVERY RENDER.
   useEffect(function () {
     console.log("After every render");
-  }); //executes "third" due to order
+  }); //executes -------------"third" due to order
 
 
   //Below effect is synchronized with query state variable.And this runs on initial render and when the state variable changes.
@@ -60,13 +60,13 @@ export default function App() {
     [query]
   );
 
-  console.log("during the render"); //run during the render--executes "First"
+  console.log("during the render"); //run during the render--executes ----------"First"
 
 */
 
   //VIDEO: HOW TO NOT FETCH DATA
   //This data fetching introduces side effect in components render logic,i.e not allowed.
-  //setting a state in render logic-----> will immediately cause component to re-rendered itself again.On re-render---->func is executed again-->fetch again--->setMovies again as well ---> also this whole thing happens over and over again----->Therefore Infinite loop of state setting and component re-rendering-->This is the reason why it is allowed to NOT set STATE in render LOGIC.
+  //setting a state in render logic-----> will immediately cause component to re-rendered itself again.On re-render---->func is executed again-->Data fetch again--->setMovies again as well ---> also this whole thing happens over and over again----->Therefore Infinite loop of state setting and component re-rendering-->This is the reason why it is allowed to NOT set STATE in render LOGIC.
   //-------------------------------------------------------------------
   // 2 // fetch(`http://www.omdbapi.com/?apikey=${KEY}&s=interstellar`)
   //   .then((res) => res.json())
@@ -174,6 +174,7 @@ Why not make useEffect async?	-----> 	Because it must return undefined or cleanu
           ); //effect is not yet synchronized with 'query' state variable,but effect not know that it should run each time query state changes so include query in depenedancy array .
           //fetch was successful but check if response is OK using below statement.
           if (!res.ok)
+            //response is not ok --->throw Error
             throw new Error("Something went wrong with fetching movies"); //as we throw the error here we need to wrap our code to try-catch block.
 
           const data = await res.json();
@@ -200,6 +201,7 @@ Why not make useEffect async?	-----> 	Because it must return undefined or cleanu
           setIsLoading(false);
         }
       }
+      //this below code is required to not fire a query when the search box is blank
       //if(!query.length)
       if (query.length < 3) {
         // query.length < 3 no fetch requests are made.
@@ -391,7 +393,7 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
   } = movie;
 
   /*
-for below code first we get "undefined undefined" and after some seconds we get the output after the data arrive from the api.Since in the very begining the movie is empty object []. so undefined as o/p, then effect starts and it gets the movie and store it in its movie state---> then component is re-rendered and oject is no longer empty.
+for below code first we get "undefined undefined" and after some seconds we get the output after the data arrive from the api.Since in the very begining during the component is mounted then the movie is still  empty object []. so undefined as o/p, then effect starts and it gets the movie and store it in its movie state---> then component is re-rendered and oject is no longer empty.
 */
   console.log(title, year);
 
@@ -403,7 +405,7 @@ for below code first we get "undefined undefined" and after some seconds we get 
       poster,
       imdbRating: Number(imdbRating),
       runtime: Number(runtime.split(" ").at(0)),
-      userRating,
+      userRating, //adding the new state in the object
     };
     onAddWatched(newWatchedMovie); //adding to watched[]
     onCloseMovie();
@@ -500,11 +502,10 @@ for below code first we get "undefined undefined" and after some seconds we get 
             <div className="rating">
               {!isWatched ? (
                 <>
-                  {" "}
                   <StarRating
                     maxRating={10}
                     size={24}
-                    onSetRating={setUserRating} //to get movie outside star rating comp and inside moviedetails component.
+                    onSetRating={setUserRating} //to get movie user rating outside star rating comp and inside moviedetails component.
                   />
                   {userRating > 0 && (
                     <button className="btn-add" onClick={handleAdd}>
